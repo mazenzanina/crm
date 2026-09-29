@@ -1,0 +1,43 @@
+name: Restore Tarot TN CRM
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/restore-manual-crm.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  restore:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Restore verified CRM source and commit it
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_commit=caa7c9e6d83b17abe797cb89e8ba661209c0e405
+          git show "${source_commit}:Tarot-TN-CRM-ONLY.zip" > "$RUNNER_TEMP/crm.zip"
+          printf '%s  %s\n' '75133aba10ed217a185faa6a660c8a8ea6616994f2eeeecf19f8ea1a2dfecd94' "$RUNNER_TEMP/crm.zip" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/release"
+          unzip -q "$RUNNER_TEMP/crm.zip" -d "$RUNNER_TEMP/release"
+          test -f "$RUNNER_TEMP/release/tarot-tn-crm/package.json"
+          test -f "$RUNNER_TEMP/release/tarot-tn-crm/src/lib/server.ts"
+          test -f "$RUNNER_TEMP/release/tarot-tn-crm/src/components/Signup.tsx"
+          cp -a "$RUNNER_TEMP/release/tarot-tn-crm/." .
+          test -f src/app/icon.png
+          test ! -d src/app/api/automation
+          test ! -f supabase/automatic-delivery.sql
+          git add -A
+          if git diff --cached --quiet; then
+            echo 'The CRM source is already complete.'
+            exit 0
+          fi
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Restore complete manual Tarot TN CRM'
+          git push origin HEAD:main
