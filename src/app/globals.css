@@ -33,7 +33,33 @@
 .auth-recovery-link:hover{color:#fff}
 .auth-bottom .auth-recovery-link{font-size:11px}
 
-/* Compact native calendar control paired with the DD/MM/YYYY text input. */
-.birth-picker-row{display:flex;flex-direction:column;gap:5px;margin-top:3px;min-width:0}
-.form-field .birth-picker-row label{display:inline-flex;align-items:center;gap:5px;color:#c9b7dd;font-size:10px;font-weight:600;cursor:pointer}
-.form-field .birth-picker-row input[type="date"]{display:block;width:100%;min-width:0;min-height:40px;padding:7px 9px;font-size:12px;cursor:pointer;color-scheme:dark}
+/* One compact calendar button; the native iPhone date control is an invisible tap target. */
+.birth-picker-row{position:relative;display:inline-flex;width:max-content;max-width:100%;min-width:0;min-height:34px;margin-top:4px}
+.form-field .birth-picker-trigger{position:relative;z-index:0;display:inline-flex;align-items:center;gap:7px;min-height:34px;padding:6px 10px;border:1px solid #4b3d58;border-radius:9px;background:#201a29;color:#d8c7e9;font-size:11px;font-weight:700;cursor:pointer}
+.form-field .birth-picker-row .birth-picker-native{position:absolute!important;inset:0;z-index:1;width:100%!important;height:100%!important;min-width:0!important;min-height:100%!important;margin:0!important;padding:0!important;border:0!important;border-radius:9px!important;opacity:0!important;background:transparent!important;color:transparent!important;appearance:none!important;-webkit-appearance:none!important;cursor:pointer;color-scheme:dark}
+.birth-picker-row:focus-within .birth-picker-trigger{outline:2px solid var(--purple);outline-offset:3px}
+
+/* Full-screen, mobile-first public signup (opened directly, never in an iframe). */
+.offer-page-compact{display:flex;flex-direction:column;min-height:100vh;min-height:100svh;overflow-x:hidden;padding-bottom:env(safe-area-inset-bottom)}
+.offer-page-compact .offer-nav{width:min(100%,900px);height:68px;padding:0 20px}
+.offer-page-compact .offer-glow{opacity:.1}
+.signup-main{position:relative;z-index:1;display:grid;flex:1;place-items:center;width:100%;padding:22px 16px 32px}
+.signup-main .offer-form-card{width:min(100%,720px);margin:0 auto;padding:clamp(18px,3.5vw,32px);}
+.offer-page-compact .form-head-icon{width:36px;height:36px;margin:13px 0 11px}
+.offer-page-compact .offer-form-card h1{font:normal clamp(28px,4vw,38px)/1.08 Georgia,"Times New Roman",serif;letter-spacing:-.04em;margin:0 0 8px}
+.offer-page-compact .form-description{margin-bottom:15px;font-size:12px}
+.offer-page-compact .offer-form{gap:11px}
+.offer-page-compact .offer-form .form-field label{font-size:11px}
+.offer-page-compact .offer-form .form-field input,.offer-page-compact .offer-form .form-field select{min-height:42px;padding:9px 11px;font-size:13px}
+.offer-page-compact .offer-form .field-row{gap:12px}
+.offer-page-compact .offer-consents{gap:7px;margin:1px 0}
+.offer-page-compact .consent{font-size:10px;line-height:1.4}
+.offer-page-compact .form-safe{margin-top:0}
+.offer-page-compact .offer-success{min-height:0;align-items:center;text-align:center;padding:30px 0}
+.offer-page-compact .offer-success h1{margin:10px 0}
+.offer-page-compact .offer-success>p:not(.eyebrow){max-width:420px}
+.optional-fields{border-top:1px solid #ffffff12;padding-top:8px}
+.optional-fields summary{width:max-content;max-width:100%;color:#d3c0e3;font-size:11px;font-weight:700;cursor:pointer}
+.optional-fields .field-row{margin-top:10px}
+.offer-page-compact .offer-footer{width:min(100%,900px);margin:0 auto;padding:14px 20px 18px}
+@media(max-width:560px){.offer-page-compact .offer-nav{height:58px;padding:0 14px}.offer-page-compact .offer-nav-link{font-size:11px}.signup-main{padding:10px 10px 20px}.signup-main .offer-form-card{padding:18px 15px;border-radius:13px}.offer-page-compact .offer-form .field-row{grid-template-columns:1fr}.offer-page-compact .offer-footer{justify-content:center;text-align:center}.offer-page-compact .offer-form-card h1{font-size:30px}}

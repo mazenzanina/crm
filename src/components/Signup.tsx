@@ -5,10 +5,8 @@ import Image from 'next/image';
 import { BRAND_LOGO_SRC } from '@/lib/brandLogo';
 import Link from 'next/link';
 import Script from 'next/script';
-import { ArrowRight, ArrowUpRight, CalendarDays, Check, CheckCircle2, LockKeyhole, Moon, Sparkles } from 'lucide-react';
-import { MoonDisc } from './MoonDisc';
+import { ArrowRight, CalendarDays, CheckCircle2, LockKeyhole, Moon } from 'lucide-react';
 import { addDemoLead } from '@/lib/demo';
-import { useSky } from '@/lib/useSky';
 import { SIGN_SYMBOLS, SIGNS, HOME_URL, type Language } from '@/lib/types';
 import { firstValidationError, signupSchema } from '@/lib/validation';
 import { isoToDMY, normalizeBirthDate, tunisTodayISO } from '@/lib/dates';
@@ -24,9 +22,13 @@ export function Signup({ configured, demo, turnstileSiteKey }: SignupProps) {
   const [working, setWorking] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState('');
-  const { sky, error: skyError } = useSky();
-  const moon = sky?.planets.find((p) => p.name === 'Moon');
-  const sun = sky?.planets.find((p) => p.name === 'Sun');
+
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get('lang');
+    if (requested === 'tn' || requested === 'fr' || requested === 'en') {
+      setForm((current) => ({ ...current, preferredLanguage: requested }));
+    }
+  }, []);
 
   useEffect(() => {
     if (!turnstileSiteKey) return;
@@ -38,7 +40,7 @@ export function Signup({ configured, demo, turnstileSiteKey }: SignupProps) {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError('');
-    if (!configured && !demo) { setError('This form needs database setup before it can accept signups.'); return; }
+    if (!configured && !demo) { setError('Signup is temporarily unavailable. Please try again later.'); return; }
     const parsed = signupSchema.safeParse({ ...form, turnstileToken: token });
     if (!parsed.success) { setError(firstValidationError(parsed.error)); return; }
     if (turnstileSiteKey && !token) { setError('Please complete the security check.'); return; }
@@ -56,77 +58,53 @@ export function Signup({ configured, demo, turnstileSiteKey }: SignupProps) {
     finally { setWorking(false); }
   }
 
-  return <div className="offer-page">
-    <div className="offer-glow offer-glow-one" /><div className="offer-glow offer-glow-two" />
+  return <div className="offer-page offer-page-compact">
     <header className="offer-nav">
-      <a className="brand" href={HOME_URL} target="_blank" rel="noreferrer">
+      <a className="brand" href={HOME_URL} aria-label="Back to Tarot TN">
         <span className="brand-mark"><Image src={BRAND_LOGO_SRC} unoptimized width={36} height={36} alt="" /></span>
         <span className="brand-text"><strong>TAROT TN</strong><small>TAROT & ASTRO · TUNISIA</small></span>
       </a>
-      <a className="offer-nav-link" href={HOME_URL} target="_blank" rel="noreferrer">Explore the website <ArrowUpRight size={15} /></a>
+      <a className="offer-nav-link" href={HOME_URL}>← Back to website</a>
     </header>
 
-    <main className="offer-grid">
-      <div className="offer-story">
-        <div className="mini-badge"><span className="badge-dot" /> A FREE LITTLE RITUAL FOR YOUR DAY</div>
-        <h1>A note from<br />the <em>sky</em>,<br />just for you<span className="gold-dot">.</span></h1>
-        <p className="offer-lede">A fresh moment with the sky every day. Receive a thoughtful tarot-and-astro reflection, with a symbolic digital card and real sky context, personally reviewed by the Tarot TN admin before sending on WhatsApp.</p>
-        <div className="offer-benefits">
-          <span><Check size={16} /> Today’s real Moon phase & planet positions</span>
-          <span><Check size={16} /> A symbolic digital card &amp; reflective number</span>
-          <span><Check size={16} /> Free, opt-in, and easy to stop</span>
-        </div>
-        <div className="offer-sky-card">
-          <div className="offer-moon"><MoonDisc sky={sky} size={53} /></div>
-          <div>
-            <div className="tiny-caption">TODAY’S SKY AT NOON · TUNIS</div>
-            <strong>{sky ? `${sky.moon.phase} · ${sky.moon.illumination}% illuminated` : 'Reading the sky...'}</strong>
-            <p>{sky ? `Moon in ${moon?.sign} ${moon ? SIGN_SYMBOLS[moon.sign] : ''}  ·  Sun in ${sun?.sign} ${sun ? SIGN_SYMBOLS[sun.sign] : ''}` : skyError || 'Today’s positions update automatically.'}</p>
-          </div>
-          <Sparkles className="offer-sky-star" size={18} />
-        </div>
-        <div className="offer-quote">“A quiet moment with the cosmos, delivered personally.”<small> — TAROT TN</small></div>
-      </div>
-
-      <div className="offer-form-card">
+    <main className="signup-main">
+      <section className="offer-form-card" aria-labelledby="signup-title">
         {done ? <div className="offer-success">
-          <div className="success-icon"><CheckCircle2 size={34} /></div>
+          <div className="success-icon"><CheckCircle2 size={30} /></div>
           <p className="eyebrow">YOU’RE ON THE LIST</p>
-          <h2>Welcome to your<br /><em>daily sky.</em></h2>
-          <p>{demo ? 'Preview only: this signup was saved in this browser, not to a shared cloud database.' : 'Your request was received. Tarot TN reviews each note and sends it personally on WhatsApp.'}</p>
-          <a className="primary-btn" href={HOME_URL} target="_blank" rel="noreferrer">Explore Tarot TN <ArrowUpRight size={17} /></a>
-          <button type="button" className="text-link" onClick={() => { setDone(false); setForm(blank); }}>Add another person</button>
+          <h1 id="signup-title">Your daily note<br /><em>is on its way.</em></h1>
+          <p>{demo ? 'Preview only — this was not saved to the shared database.' : 'Request received. Your note will be sent personally on WhatsApp.'}</p>
+          <a className="primary-btn" href={HOME_URL}>Back to Tarot TN <ArrowRight size={17} /></a>
+          <button type="button" className="text-link" onClick={() => { setDone(false); setForm({ ...blank, preferredLanguage: form.preferredLanguage }); }}>Add another person</button>
         </div> : <>
-          <div className="form-topline"><span>✦ FREE DAILY TAROT &amp; ASTRO NOTE</span><span>01 / 01</span></div>
-          <div className="form-head-icon"><Moon size={22} /></div>
-          <h2>Your cosmic note<br /><em>starts here.</em></h2>
-          <p className="form-description">Tell us a little about yourself. We’ll use your details only for your opted-in WhatsApp sky note.</p>
-          {demo && <div className="demo-inline"><Sparkles size={16} /> Local preview — signups here stay in this browser only.</div>}
-          {!demo && !configured && <div className="alert-box">The signup database is not configured yet. Complete the setup in the project README before sharing this page.</div>}
+          <div className="form-topline"><span>✦ FREE DAILY NOTE</span><span>18+</span></div>
+          <div className="form-head-icon"><Moon size={20} /></div>
+          <h1 id="signup-title">Your cosmic note<br /><em>starts here.</em></h1>
+          <p className="form-description">A short daily note, sent personally on WhatsApp.</p>
+          {demo && <div className="demo-inline">Preview only — signups stay in this browser.</div>}
+          {!demo && !configured && <div className="alert-box">Signup is not available right now.</div>}
           <form onSubmit={submit} className="offer-form">
-            <div className="form-field"><label htmlFor="offer-name">Your name <b>*</b></label><input id="offer-name" required maxLength={80} value={form.name} placeholder="How should I greet you?" onChange={(event) => setForm({ ...form, name: event.target.value })} /></div>
-            <div className="form-field"><label htmlFor="offer-phone">WhatsApp number <b>*</b></label><input id="offer-phone" required type="tel" inputMode="tel" maxLength={35} value={form.phone} placeholder="+216 22 481 622" onChange={(event) => setForm({ ...form, phone: event.target.value })} /><small>Include your country code, like +216.</small></div>
-            <div className="field-row"><div className="form-field"><label htmlFor="offer-birth">Birth date (DD/MM/YYYY) <span>optional</span></label><input id="offer-birth" type="text" inputMode="numeric" autoComplete="bday" maxLength={10} placeholder="25/09/1995" value={form.birthDate} onChange={(event) => setForm({ ...form, birthDate: event.target.value })} onBlur={() => { const iso = normalizeBirthDate(form.birthDate); if (iso) setForm((current) => ({ ...current, birthDate: isoToDMY(iso) })); }} /><div className="birth-picker-row"><label htmlFor="offer-birth-picker"><CalendarDays size={14} aria-hidden="true" /> Choose from calendar</label><input id="offer-birth-picker" type="date" aria-label="Choose birth date from calendar" autoComplete="off" min="1900-01-01" max={tunisTodayISO()} value={normalizeBirthDate(form.birthDate) || ''} onChange={(event) => setForm((current) => ({ ...current, birthDate: event.target.value ? isoToDMY(event.target.value) : '' }))} /></div></div>
-              <div className="form-field"><label htmlFor="offer-birth-time">Birth time <span>optional</span></label><input id="offer-birth-time" type="time" value={form.birthTime} onChange={(event) => setForm({ ...form, birthTime: event.target.value })} /><small>Local time, if known (24-hour HH:MM).</small></div></div>
-            <div className="form-field"><label htmlFor="offer-sign">Sun sign <span>optional</span></label><select id="offer-sign" value={form.sunSign} onChange={(event) => setForm({ ...form, sunSign: event.target.value })}><option value="">Choose your sign</option>{SIGNS.map((sign) => <option key={sign} value={sign}>{SIGN_SYMBOLS[sign]} {sign}</option>)}</select></div>
-            <div className="form-hint">Birth details are optional. Pick your sign if you know it; a date-only estimate can be off near a cusp. Daily notes are not a personal birth chart.</div>
-            <div className="field-row"><div className="form-field"><label htmlFor="offer-lang">Preferred language</label><select id="offer-lang" value={form.preferredLanguage} onChange={(event) => setForm({ ...form, preferredLanguage: event.target.value as Language })}><option value="tn">تونسي / Tunisian</option><option value="fr">Français</option><option value="en">English</option></select></div>
-              <div className="form-field"><label htmlFor="offer-location">Your city <span>optional</span></label><input id="offer-location" maxLength={100} value={form.location} placeholder="e.g. Tunis" onChange={(event) => setForm({ ...form, location: event.target.value })} /></div></div>
-            <div className="form-field"><label htmlFor="offer-email">Email <span>optional</span></label><input id="offer-email" type="email" maxLength={254} value={form.email} placeholder="hello@example.com" onChange={(event) => setForm({ ...form, email: event.target.value })} /></div>
+            <div className="form-field"><label htmlFor="offer-name">Name <b>*</b></label><input id="offer-name" required maxLength={80} value={form.name} autoComplete="name" placeholder="Your name" onChange={(event) => setForm({ ...form, name: event.target.value })} /></div>
+            <div className="form-field"><label htmlFor="offer-phone">WhatsApp number <b>*</b></label><input id="offer-phone" required type="tel" inputMode="tel" maxLength={35} value={form.phone} autoComplete="tel" placeholder="+216 22 481 622" onChange={(event) => setForm({ ...form, phone: event.target.value })} /></div>
+            <div className="field-row"><div className="form-field"><label htmlFor="offer-birth">Birth date <span>optional · DD/MM/YYYY</span></label><input id="offer-birth" type="text" inputMode="numeric" autoComplete="bday" maxLength={10} placeholder="25/09/1995" value={form.birthDate} onChange={(event) => setForm({ ...form, birthDate: event.target.value })} onBlur={() => { const iso = normalizeBirthDate(form.birthDate); if (iso) setForm((current) => ({ ...current, birthDate: isoToDMY(iso) })); }} /><div className="birth-picker-row"><label className="birth-picker-trigger" htmlFor="offer-birth-picker"><CalendarDays size={15} aria-hidden="true" /><span>Choose date</span></label><input className="birth-picker-native" id="offer-birth-picker" type="date" aria-label="Choose birth date from calendar" autoComplete="off" min="1900-01-01" max={tunisTodayISO()} value={normalizeBirthDate(form.birthDate) || ''} onChange={(event) => setForm((current) => ({ ...current, birthDate: event.target.value ? isoToDMY(event.target.value) : '' }))} /></div></div>
+              <div className="form-field"><label htmlFor="offer-birth-time">Birth time <span>optional</span></label><input id="offer-birth-time" type="time" value={form.birthTime} onChange={(event) => setForm({ ...form, birthTime: event.target.value })} /></div></div>
+            <div className="field-row"><div className="form-field"><label htmlFor="offer-lang">Message language</label><select id="offer-lang" value={form.preferredLanguage} onChange={(event) => setForm({ ...form, preferredLanguage: event.target.value as Language })}><option value="tn">تونسي / Tunisian</option><option value="fr">Français</option><option value="en">English</option></select></div>
+              <div className="form-field"><label htmlFor="offer-sign">Sun sign <span>optional</span></label><select id="offer-sign" value={form.sunSign} onChange={(event) => setForm({ ...form, sunSign: event.target.value })}><option value="">Choose your sign</option>{SIGNS.map((sign) => <option key={sign} value={sign}>{SIGN_SYMBOLS[sign]} {sign}</option>)}</select></div></div>
+            <details className="optional-fields"><summary>More details (optional)</summary><div className="field-row"><div className="form-field"><label htmlFor="offer-location">City</label><input id="offer-location" maxLength={100} value={form.location} placeholder="Tunis" onChange={(event) => setForm({ ...form, location: event.target.value })} /></div><div className="form-field"><label htmlFor="offer-email">Email</label><input id="offer-email" type="email" maxLength={254} value={form.email} placeholder="you@example.com" onChange={(event) => setForm({ ...form, email: event.target.value })} /></div></div></details>
             <div className="hidden-trap" aria-hidden="true"><label htmlFor="offer-website">Website</label><input id="offer-website" tabIndex={-1} autoComplete="off" value={form.website} onChange={(event) => setForm({ ...form, website: event.target.value })} /></div>
             <div className="offer-consents">
-              <label className="consent"><input type="checkbox" checked={form.dailyConsent} onChange={(event) => setForm({ ...form, dailyConsent: event.target.checked })} /><span>I want free daily sky notes on WhatsApp. I can reply STOP anytime. <b>*</b></span></label>
-              <label className="consent"><input type="checkbox" checked={form.privacyConsent} onChange={(event) => setForm({ ...form, privacyConsent: event.target.checked })} /><span>I agree to the <Link href="/privacy" target="_blank">privacy information</Link> and storage of my details for this offer. <b>*</b></span></label>
-              <label className="consent"><input type="checkbox" checked={form.adultConsent} onChange={(event) => setForm({ ...form, adultConsent: event.target.checked })} /><span>I am at least 18 years old. <b>*</b></span></label>
+              <label className="consent"><input type="checkbox" checked={form.dailyConsent} onChange={(event) => setForm({ ...form, dailyConsent: event.target.checked })} /><span>Send me free daily notes on WhatsApp. Reply STOP anytime. <b>*</b></span></label>
+              <label className="consent"><input type="checkbox" checked={form.privacyConsent} onChange={(event) => setForm({ ...form, privacyConsent: event.target.checked })} /><span>I agree to the <Link href="/privacy" target="_blank">privacy notice</Link> and storage of my details. <b>*</b></span></label>
+              <label className="consent"><input type="checkbox" checked={form.adultConsent} onChange={(event) => setForm({ ...form, adultConsent: event.target.checked })} /><span>I am 18 or older. <b>*</b></span></label>
             </div>
             {turnstileSiteKey && <><Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" strategy="afterInteractive" /><div className="cf-turnstile" data-sitekey={turnstileSiteKey} data-callback="onTurnstileSuccess" /></>}
             {error && <p className="form-error" role="alert">{error}</p>}
-            <button className="primary-btn form-submit" type="submit" disabled={working || (!demo && !configured)}>{working ? 'Saving your place...' : 'Get my free daily note'} <ArrowRight size={18} /></button>
-            <div className="form-safe"><LockKeyhole size={13} /> Your information stays private. No automatic messages.</div>
+            <button className="primary-btn form-submit" type="submit" disabled={working || (!demo && !configured)}>{working ? 'Submitting…' : 'Get my free note'} <ArrowRight size={17} /></button>
+            <div className="form-safe"><LockKeyhole size={13} /> Sent personally. Not automatic.</div>
           </form>
         </>}
-      </div>
+      </section>
     </main>
-    <footer className="offer-footer"><span>© Tarot TN · Made with intention ✦</span><span><Link href="/privacy">Privacy</Link><a href={HOME_URL} target="_blank" rel="noreferrer">Website ↗</a></span></footer>
+    <footer className="offer-footer"><span>© Tarot TN · 18+</span><span><Link href="/privacy">Privacy</Link><a href={HOME_URL}>Website</a></span></footer>
   </div>;
 }
