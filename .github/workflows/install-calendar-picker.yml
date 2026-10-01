@@ -1,14 +1,4 @@
-"""Package the reviewed source diff into a one-file GitHub Actions installer."""
-from pathlib import Path
-from hashlib import sha256
-import gzip, base64, textwrap
-
-patch=Path('/home/user/brand-update/calendar.patch').read_bytes()
-compressed=gzip.compress(patch,compresslevel=9,mtime=0)
-encoded=base64.b64encode(compressed).decode('ascii')
-blocks='\n'.join('          '+line for line in textwrap.wrap(encoded,76))
-sha=sha256(patch).hexdigest()
-yaml=f'''# ONE FILE for the existing manual-only CRM GitHub repository.
+# ONE FILE for the existing manual-only CRM GitHub repository.
 # Upload this as .github/workflows/install-calendar-picker.yml on main.
 # Contains a compressed, checksum-checked patch for signup, client editor, CSS,
 # privacy date and a regression test. Source is in Tarot-TN-CRM-CALENDAR-MANUAL.zip.
@@ -45,9 +35,71 @@ jobs:
           test -f src/components/ClientEditor.tsx
           test ! -e supabase/automatic-delivery.sql
           cat <<'PATCH_BASE64_GZIP' | base64 --decode | gzip -dc > "$RUNNER_TEMP/calendar.patch"
-{blocks}
+          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
           PATCH_BASE64_GZIP
-          printf '%s  %s\\n' '{sha}' "$RUNNER_TEMP/calendar.patch" | sha256sum -c -
+          printf '%s  %s\n' '09eff68438c30bfb65bb09f95c4798a7cd8350961d0191fd1952ceb3a62991cc' "$RUNNER_TEMP/calendar.patch" | sha256sum -c -
           if git apply --check "$RUNNER_TEMP/calendar.patch" 2>/dev/null; then
             git apply "$RUNNER_TEMP/calendar.patch"
           elif git apply --reverse --check "$RUNNER_TEMP/calendar.patch"; then
@@ -75,7 +127,3 @@ jobs:
           fi
           git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Add iPhone DOB picker to Tarot TN CRM forms'
           git push origin HEAD:main
-'''
-path=Path('/home/user/install-calendar-picker.yml')
-path.write_text(yaml,encoding='utf-8')
-print(path, 'workflow bytes',len(yaml),'patch bytes',len(patch),'compressed bytes',len(compressed),'SHA256',sha)
