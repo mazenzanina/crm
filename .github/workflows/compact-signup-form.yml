@@ -1,0 +1,185 @@
+# Upload this YAML as .github/workflows/compact-signup-form.yml in mazenzanina/crm.
+# It fixes the blank DOB box and makes the public CRM signup full-screen and responsive.
+# No database migration, secrets, or WhatsApp automation are included.
+name: Compact Tarot TN signup and calendar
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/compact-signup-form.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  install:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Apply verified compact calendar and full-screen form
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f package.json
+          test -f src/components/Signup.tsx
+          test -f src/components/ClientEditor.tsx
+          test ! -e supabase/automatic-delivery.sql
+          cat <<'PATCH_BASE64_GZIP' | base64 --decode | gzip -dc > "$RUNNER_TEMP/compact-signup.patch"
+          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
+          PATCH_BASE64_GZIP
+          printf '%s  %s\n' '96255386275e57af32665aa586b6a170396eec12e0a88d717baf91d6da5fd65a' "$RUNNER_TEMP/compact-signup.patch" | sha256sum -c -
+          if git apply --check "$RUNNER_TEMP/compact-signup.patch" 2>/dev/null; then
+            git apply "$RUNNER_TEMP/compact-signup.patch"
+          elif git apply --reverse --check "$RUNNER_TEMP/compact-signup.patch"; then
+            echo 'Compact calendar and form are already installed. Nothing to change.'
+          else
+            echo 'CRM source has changed since this patch was tested. Stopping safely; nothing overwritten.' >&2
+            exit 1
+          fi
+      - name: Typecheck, test, and build
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          npm run typecheck
+          npm test
+          npm run build
+      - name: Commit verified CRM update
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add src/components/Signup.tsx src/components/ClientEditor.tsx src/app/globals.css tests/date-picker.test.ts
+          if git diff --cached --quiet; then
+            echo 'Already installed; no commit needed.'
+            exit 0
+          fi
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Make Tarot TN signup full-screen and compact'
+          git push origin HEAD:main
