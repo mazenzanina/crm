@@ -1,0 +1,81 @@
+"""Package the reviewed source diff into a one-file GitHub Actions installer."""
+from pathlib import Path
+from hashlib import sha256
+import gzip, base64, textwrap
+
+patch=Path('/home/user/brand-update/calendar.patch').read_bytes()
+compressed=gzip.compress(patch,compresslevel=9,mtime=0)
+encoded=base64.b64encode(compressed).decode('ascii')
+blocks='\n'.join('          '+line for line in textwrap.wrap(encoded,76))
+sha=sha256(patch).hexdigest()
+yaml=f'''# ONE FILE for the existing manual-only CRM GitHub repository.
+# Upload this as .github/workflows/install-calendar-picker.yml on main.
+# Contains a compressed, checksum-checked patch for signup, client editor, CSS,
+# privacy date and a regression test. Source is in Tarot-TN-CRM-CALENDAR-MANUAL.zip.
+# Does NOT install or turn on WhatsApp automation. No secrets are needed.
+name: Install Tarot TN calendar picker
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/install-calendar-picker.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  install:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Apply the tested, verified calendar-only change
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f package.json
+          test -f src/components/Signup.tsx
+          test -f src/components/ClientEditor.tsx
+          test ! -e supabase/automatic-delivery.sql
+          cat <<'PATCH_BASE64_GZIP' | base64 --decode | gzip -dc > "$RUNNER_TEMP/calendar.patch"
+{blocks}
+          PATCH_BASE64_GZIP
+          printf '%s  %s\\n' '{sha}' "$RUNNER_TEMP/calendar.patch" | sha256sum -c -
+          if git apply --check "$RUNNER_TEMP/calendar.patch" 2>/dev/null; then
+            git apply "$RUNNER_TEMP/calendar.patch"
+          elif git apply --reverse --check "$RUNNER_TEMP/calendar.patch"; then
+            echo 'Calendar picker is already installed. Nothing to change.'
+          else
+            echo 'Source has changed since this patch was prepared. Stopping safely; nothing overwritten.' >&2
+            exit 1
+          fi
+      - name: Test and build before committing
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          npm run typecheck
+          npm test
+          npm run build
+      - name: Commit to existing main (Vercel deploys from there)
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add src/components/Signup.tsx src/components/ClientEditor.tsx src/app/globals.css src/app/privacy/page.tsx tests/date-picker.test.ts
+          if git diff --cached --quiet; then
+            echo 'Already installed; no commit needed.'
+            exit 0
+          fi
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Add iPhone DOB picker to Tarot TN CRM forms'
+          git push origin HEAD:main
+'''
+path=Path('/home/user/install-calendar-picker.yml')
+path.write_text(yaml,encoding='utf-8')
+print(path, 'workflow bytes',len(yaml),'patch bytes',len(patch),'compressed bytes',len(compressed),'SHA256',sha)
