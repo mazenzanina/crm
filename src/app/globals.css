@@ -32,3 +32,8 @@
 .auth-recovery-link{align-self:flex-start;color:#d9bdf3;text-decoration:underline;text-underline-offset:3px;font-size:12px;font-weight:700}
 .auth-recovery-link:hover{color:#fff}
 .auth-bottom .auth-recovery-link{font-size:11px}
+
+/* Compact native calendar control paired with the DD/MM/YYYY text input. */
+.birth-picker-row{display:flex;flex-direction:column;gap:5px;margin-top:3px;min-width:0}
+.form-field .birth-picker-row label{display:inline-flex;align-items:center;gap:5px;color:#c9b7dd;font-size:10px;font-weight:600;cursor:pointer}
+.form-field .birth-picker-row input[type="date"]{display:block;width:100%;min-width:0;min-height:40px;padding:7px 9px;font-size:12px;cursor:pointer;color-scheme:dark}

@@ -17,7 +17,7 @@ export default function PrivacyPage() {
       <p>You can stop messages any time: reply <strong>STOP</strong> to Tarot TN on WhatsApp at <a href="https://wa.me/21622481622" target="_blank" rel="noreferrer">+216 22 481 622</a>. The Tarot TN administrator will switch off daily messages in the CRM. You can also ask us to see, correct or delete your details using the same contact. No messages are sent automatically: the administrator reviews and sends them individually.</p>
       <h2>About the readings</h2>
       <p>Planet and Moon placements are calculated for 12:00 in Tunis each day. The symbolic daily tarot card is selected digitally, not physically drawn; its number is a reflective prompt, not a measured energy score. Messages are reflective entertainment, not a personal natal chart or medical, legal or financial advice. This offer is for adults aged 18+.</p>
-      <p className="legal-fine">Last updated 28 September 2026 · <a href="https://tarot-tn.vercel.app/" target="_blank" rel="noreferrer">Tarot TN homepage ↗</a></p>
+      <p className="legal-fine">Last updated 30 September 2026 · <a href="https://tarot-tn.vercel.app/" target="_blank" rel="noreferrer">Tarot TN homepage ↗</a></p>
     </div>
   </main>;
 }

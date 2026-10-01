@@ -5,13 +5,13 @@ import Image from 'next/image';
 import { BRAND_LOGO_SRC } from '@/lib/brandLogo';
 import Link from 'next/link';
 import Script from 'next/script';
-import { ArrowRight, ArrowUpRight, Check, CheckCircle2, LockKeyhole, Moon, Sparkles } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, CalendarDays, Check, CheckCircle2, LockKeyhole, Moon, Sparkles } from 'lucide-react';
 import { MoonDisc } from './MoonDisc';
 import { addDemoLead } from '@/lib/demo';
 import { useSky } from '@/lib/useSky';
 import { SIGN_SYMBOLS, SIGNS, HOME_URL, type Language } from '@/lib/types';
 import { firstValidationError, signupSchema } from '@/lib/validation';
-import { isoToDMY, normalizeBirthDate } from '@/lib/dates';
+import { isoToDMY, normalizeBirthDate, tunisTodayISO } from '@/lib/dates';
 
 type SignupProps = { configured: boolean; demo: boolean; turnstileSiteKey: string };
 
@@ -106,7 +106,7 @@ export function Signup({ configured, demo, turnstileSiteKey }: SignupProps) {
           <form onSubmit={submit} className="offer-form">
             <div className="form-field"><label htmlFor="offer-name">Your name <b>*</b></label><input id="offer-name" required maxLength={80} value={form.name} placeholder="How should I greet you?" onChange={(event) => setForm({ ...form, name: event.target.value })} /></div>
             <div className="form-field"><label htmlFor="offer-phone">WhatsApp number <b>*</b></label><input id="offer-phone" required type="tel" inputMode="tel" maxLength={35} value={form.phone} placeholder="+216 22 481 622" onChange={(event) => setForm({ ...form, phone: event.target.value })} /><small>Include your country code, like +216.</small></div>
-            <div className="field-row"><div className="form-field"><label htmlFor="offer-birth">Birth date (DD/MM/YYYY) <span>optional</span></label><input id="offer-birth" type="text" inputMode="numeric" autoComplete="bday" maxLength={10} placeholder="25/09/1995" value={form.birthDate} onChange={(event) => setForm({ ...form, birthDate: event.target.value })} onBlur={() => { const iso = normalizeBirthDate(form.birthDate); if (iso) setForm((current) => ({ ...current, birthDate: isoToDMY(iso) })); }} /></div>
+            <div className="field-row"><div className="form-field"><label htmlFor="offer-birth">Birth date (DD/MM/YYYY) <span>optional</span></label><input id="offer-birth" type="text" inputMode="numeric" autoComplete="bday" maxLength={10} placeholder="25/09/1995" value={form.birthDate} onChange={(event) => setForm({ ...form, birthDate: event.target.value })} onBlur={() => { const iso = normalizeBirthDate(form.birthDate); if (iso) setForm((current) => ({ ...current, birthDate: isoToDMY(iso) })); }} /><div className="birth-picker-row"><label htmlFor="offer-birth-picker"><CalendarDays size={14} aria-hidden="true" /> Choose from calendar</label><input id="offer-birth-picker" type="date" aria-label="Choose birth date from calendar" autoComplete="off" min="1900-01-01" max={tunisTodayISO()} value={normalizeBirthDate(form.birthDate) || ''} onChange={(event) => setForm((current) => ({ ...current, birthDate: event.target.value ? isoToDMY(event.target.value) : '' }))} /></div></div>
               <div className="form-field"><label htmlFor="offer-birth-time">Birth time <span>optional</span></label><input id="offer-birth-time" type="time" value={form.birthTime} onChange={(event) => setForm({ ...form, birthTime: event.target.value })} /><small>Local time, if known (24-hour HH:MM).</small></div></div>
             <div className="form-field"><label htmlFor="offer-sign">Sun sign <span>optional</span></label><select id="offer-sign" value={form.sunSign} onChange={(event) => setForm({ ...form, sunSign: event.target.value })}><option value="">Choose your sign</option>{SIGNS.map((sign) => <option key={sign} value={sign}>{SIGN_SYMBOLS[sign]} {sign}</option>)}</select></div>
             <div className="form-hint">Birth details are optional. Pick your sign if you know it; a date-only estimate can be off near a cusp. Daily notes are not a personal birth chart.</div>
