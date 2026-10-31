@@ -36,7 +36,7 @@ async function handle(req: NextRequest) {
   const dry = new URL(req.url).searchParams.get('dry') === '1';
   for (const c of (clients as any[]) || []) {
     try {
-      const lang = c.preferred_language || 'en';
+      const lang = 'en'; // forced English
       const parts = makeDailyMessage(c as any, sky, bookingUrl);
       const text = joinMessage(parts);
       const kb = dailyKeyboard(lang, bookingUrl);
