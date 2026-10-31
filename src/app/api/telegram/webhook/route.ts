@@ -38,9 +38,27 @@ async function sendDailyFor(client: any, chatId: string) {
 
 export async function POST(req: NextRequest) {
   const cfg = telegramConfig();
-  if (!cfg) return NextResponse.json({ ok: false }, { status: 503 });
-  if (!cloudReady()) return NextResponse.json({ ok: false }, { status: 503 });
   const update = await req.json().catch(() => null) as any;
+  // Always answer callback quickly to avoid Telegram "Loading..." even if config missing
+  const cqEarly = update?.callback_query;
+  if (cqEarly?.id && (!cfg || !cloudReady())) {
+    await answerCallbackQuery(cqEarly.id, cfg ? 'Service starting, try again' : 'Bot not configured').catch(()=>{});
+  }
+  if (!cfg) {
+    // try to still answer message if possible
+    const chatIdFallback = update?.message?.chat?.id || cqEarly?.message?.chat?.id || cqEarly?.from?.id;
+    if (chatIdFallback) {
+      await sendTelegramMessage(String(chatIdFallback), 'Bot is not configured. Check TELEGRAM_BOT_TOKEN and TELEGRAM_BOT_USERNAME in Vercel.').catch(()=>{});
+    }
+    return NextResponse.json({ ok: false, error: 'telegram not configured' });
+  }
+  if (!cloudReady()) {
+    const chatIdFallback = update?.message?.chat?.id || cqEarly?.message?.chat?.id || cqEarly?.from?.id;
+    if (chatIdFallback) {
+      await sendTelegramMessage(String(chatIdFallback), 'Database not ready. Check Supabase env in Vercel, then try /start +216...').catch(()=>{});
+    }
+    return NextResponse.json({ ok: false, error: 'db not ready' });
+  }
   const db = serviceDb();
 
   // 1) Callback queries
@@ -48,7 +66,9 @@ export async function POST(req: NextRequest) {
   if (cq?.id && cq?.data) {
     const chatId = String(cq.message?.chat?.id || cq.from?.id || '');
     const data = String(cq.data);
-    const client = chatId ? await getClientByChat(chatId) : null;
+    // answer immediately to remove Loading...
+    await answerCallbackQuery(cq.id).catch(()=>{});
+    const client = chatId ? await getClientByChat(chatId).catch(()=>null) : null;
 
     if (data === 'fb_up' || data === 'fb_down') {
       const val = data === 'fb_up' ? 'up' : 'down';
@@ -95,15 +115,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
     if (data === 'stop') {
-      if (client) await db.from('clients').update({ telegram_opt_in: false, telegram_opted_out_at: new Date().toISOString() }).eq('id', client.id);
-      await answerCallbackQuery(cq.id, 'Paused');
-      await sendTelegramMessage(chatId, 'Paused. Send /resume to restart.', { inline_keyboard: [[{ text: '▶️ Resume', callback_data: 'resume' }]] });
+      if (client) {
+        await db.from('clients').update({ telegram_opt_in: false, telegram_opted_out_at: new Date().toISOString() }).eq('id', client.id);
+        await sendTelegramMessage(chatId, 'Paused. Send /resume to restart.', { inline_keyboard: [[{ text: '▶️ Resume', callback_data: 'resume' }]] });
+      } else {
+        await sendTelegramMessage(chatId, 'Not linked yet. Send /start then +216...', welcomeKeyboard());
+      }
       return NextResponse.json({ ok: true });
     }
     if (data === 'resume') {
-      if (client) await db.from('clients').update({ telegram_opt_in: true, telegram_opted_in_at: new Date().toISOString(), telegram_opted_out_at: null }).eq('id', client.id);
-      await answerCallbackQuery(cq.id, 'Resumed ✓');
-      await sendTelegramMessage(chatId, 'Resumed ✨ Daily note at 09:00.', linkedKeyboard());
+      if (client) {
+        await db.from('clients').update({ telegram_opt_in: true, telegram_opted_in_at: new Date().toISOString(), telegram_opted_out_at: null }).eq('id', client.id);
+        await sendTelegramMessage(chatId, 'Resumed ✨ Daily note at 09:00.', linkedKeyboard());
+      } else {
+        await sendTelegramMessage(chatId, 'Not linked yet. Send /start then +216... to link.', welcomeKeyboard());
+      }
       return NextResponse.json({ ok: true });
     }
     if (data === 'today') {
@@ -219,9 +245,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  const phoneMatch = text.replace(/\s/g, '').match(/^\+[1-9][0-9]{7,14}$/);
+  let normalized = text.replace(/[\s\-\(\)\.]/g, '');
+  if (normalized.startsWith('00')) normalized = '+' + normalized.slice(2);
+  const phoneMatch = normalized.match(/^\+[1-9][0-9]{7,14}$/);
   if (phoneMatch) {
-    const phone = phoneMatch[0];
+    const phone = normalized;
     const { data: client } = await db.from('clients').select('id,name,sun_sign,birth_date,phone').eq('phone', phone).maybeSingle();
     if (client) {
       await db.from('clients').update({ telegram_chat_id: chatId, telegram_username: username, telegram_opt_in: true, telegram_opted_in_at: new Date().toISOString(), telegram_opted_out_at: null }).eq('id', (client as any).id);
