@@ -75,19 +75,20 @@ export function upsertDemoClient(input: ClientInput, existing?: Client): Client 
   return next;
 }
 
-export function addDemoLead(input: { name: string; phone: string; email: string | null; birthDate: string | null; birthTime: string | null; sunSign: Client['sun_sign']; preferredLanguage: Client['preferred_language']; location: string | null; autoConsent: boolean }): void {
+export function addDemoLead(input: { name: string; phone: string; email: string | null; birthDate: string | null; birthTime: string | null; sunSign: Client['sun_sign']; preferredLanguage: Client['preferred_language']; location: string | null; autoConsent?: boolean }): void {
   const current = getDemoClients();
   const phone = normalizePhone(input.phone);
   if (current.some((c) => c.phone === phone)) return;
   const now = new Date().toISOString();
+  const ac = !!input.autoConsent;
   const newLead: Client = {
     id: crypto.randomUUID(), name: input.name, phone, email: input.email, location: input.location,
     birth_date: input.birthDate, birth_time: input.birthTime, birth_place: null,
     sun_sign: input.sunSign || (input.birthDate ? approximateSunSign(input.birthDate) : null),
     preferred_language: input.preferredLanguage, status: 'lead', total_spent_tnd: 0, notes: '',
-    daily_opt_in: true, auto_daily_opt_in: input.autoConsent,
-    auto_opted_in_at: input.autoConsent ? now : null, auto_opted_out_at: null,
-    auto_opt_in_source: input.autoConsent ? 'separate auto checkbox (demo only)' : null,
+    daily_opt_in: true, auto_daily_opt_in: ac,
+    auto_opted_in_at: ac ? now : null, auto_opted_out_at: null,
+    auto_opt_in_source: ac ? 'separate auto checkbox (demo only)' : null,
     opted_in_at: now, opted_out_at: null, opt_in_source: 'public form (same-device preview only)',
     privacy_accepted_at: now, adult_confirmed_at: now,
     last_sent_on: null, last_sent_at: null, telegram_chat_id: null, telegram_username: null, telegram_opt_in: false, telegram_opted_in_at: null, telegram_opted_out_at: null, created_at: now, updated_at: now,
