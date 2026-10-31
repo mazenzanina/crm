@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cloudReady, serviceDb } from '@/lib/server';
 import { computeSky } from '@/lib/sky';
 import { makeDailyMessage, joinMessage } from '@/lib/messages';
-import { telegramConfig, sendTelegramMessage, sendTelegramPhoto, dailyKeyboard } from '@/lib/telegram';
+import { telegramConfig, sendTelegramMessage, dailyKeyboard } from '@/lib/telegram';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -45,17 +45,8 @@ async function handle(req: NextRequest) {
       const file = cardFileFor(c.id, sky.dateKey);
       const base = process.env.CARD_IMAGE_BASE || 'https://crm-flame-rho-25.vercel.app/img/tarot';
       const photoUrl = `${base}/${file}.jpg`;
-      let usedPhoto = false;
-      try {
-        // Always try photo first — if it fails (404/blocked) fallback to text
-        if (process.env.CARD_IMAGES_DISABLED !== '1') {
-          await sendTelegramPhoto(c.telegram_chat_id, photoUrl, text, kb);
-          usedPhoto = true;
-        }
-      } catch {}
-      if (!usedPhoto) {
-        await sendTelegramMessage(c.telegram_chat_id, text, kb);
-      }
+      // images disabled per user - text only
+      await sendTelegramMessage(c.telegram_chat_id, text, kb);
       await db.from('telegram_sends').insert({ client_id: c.id, chat_id: c.telegram_chat_id, date_key: sky.dateKey }).then(()=>{},()=>{});
       sent++;
       await new Promise(r => setTimeout(r, 130));
