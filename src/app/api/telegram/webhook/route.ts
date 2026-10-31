@@ -11,23 +11,29 @@ export const runtime='nodejs';export const dynamic='force-dynamic';
 async function getClient(chatId:string){
   try{
     const db=serviceDb();
-    const {data, error} = await db.from('clients').select('id,name,preferred_language,telegram_opt_in,sun_sign,birth_date').eq('telegram_chat_id',chatId).maybeSingle();
-    if(error){
-      // column missing -> return null but log
-      console.error('getClient error', error.message);
-      return null;
-    }
+    // Try exact string match first
+    let {data, error} = await db.from('clients').select('id,name,preferred_language,telegram_opt_in,sun_sign,birth_date,phone').eq('telegram_chat_id',chatId).maybeSingle();
+    if(error) console.error('getClient str error', error.message);
     if(data) return data as any;
-    // fallback: try with numeric chatId if string failed (in case column is integer)
-    try{
-      const num = Number(chatId);
-      if(!isNaN(num)){
-        const {data: data2} = await db.from('clients').select('id,name,preferred_language,telegram_opt_in,sun_sign,birth_date').eq('telegram_chat_id', num as any).maybeSingle();
-        if(data2) return data2 as any;
-      }
-    }catch{}
+    // Try numeric
+    const num = Number(chatId);
+    if(!isNaN(num)){
+      try{
+        const r2 = await db.from('clients').select('id,name,preferred_language,telegram_opt_in,sun_sign,birth_date,phone').eq('telegram_chat_id', num as any).maybeSingle();
+        if(r2.data) return r2.data as any;
+        if(r2.error) console.error('getClient num error', r2.error.message);
+      }catch(e){ console.error('getClient num exception', e); }
+    }
+    // Try trimming
+    const trimmed = chatId.trim();
+    if(trimmed !== chatId){
+      try{
+        const r3 = await db.from('clients').select('id,name,preferred_language,telegram_opt_in,sun_sign,birth_date,phone').eq('telegram_chat_id', trimmed).maybeSingle();
+        if(r3.data) return r3.data as any;
+      }catch{}
+    }
     return null;
-  }catch(e){ console.error('getClient exception', e); return null; }
+  }catch(e){ console.error('getClient outer', e); return null; }
 }
 async function sendDaily(client:any,chatId:string){try{const sky=computeSky();const db=serviceDb();const {data:settings}=await db.from('app_settings').select('booking_url').eq('id',1).maybeSingle();const bookingUrl=(settings as any)?.booking_url||'https://tarot-tn.vercel.app/booking.html';const parts=makeDailyMessage({id:client.id,name:client.name,sun_sign:client.sun_sign,preferred_language:'en'},sky,bookingUrl);const text=joinMessage(parts);const kb=dailyKeyboard(bookingUrl,client.id);await sendTelegramMessage(chatId,text,kb);}catch(e){try{const sky2=computeSky();const parts2=makeDailyMessage({id:client.id,name:client.name,sun_sign:client.sun_sign,preferred_language:'en'},sky2,'https://tarot-tn.vercel.app/booking.html');await sendTelegramMessage(chatId,joinMessage(parts2),dailyKeyboard('https://tarot-tn.vercel.app/booking.html',client.id));}catch{}}}
 export async function POST(req:NextRequest){
@@ -108,6 +114,10 @@ export async function POST(req:NextRequest){
     return NextResponse.json({ok:true});
   }
   try{
+    if(/^\/id/i.test(text)){
+      await sendTelegramMessage(chatId,'Your chat ID: `'+chatId+'`\nUsername: @'+(username||'none')+'\nSend this to Mazen if Today says not linked.',linkedKeyboard());
+      return NextResponse.json({ok:true});
+    }
     if(/^\/stats/i.test(text)){
       const adminIds=(process.env.TELEGRAM_ADMIN_IDS||'').split(',').map(s=>s.trim()).filter(Boolean);
       const isAdm=adminIds.includes(chatId)||(username&& (process.env.TELEGRAM_ADMIN_USERNAMES||'').split(',').map(s=>s.trim().replace(/^@/,'')).includes(username));
