@@ -8,9 +8,9 @@ const SETTINGS_KEY = 'mazen_cosmic_crm_demo_settings_v1';
 const iso = '2026-09-20T10:00:00.000Z';
 
 const initialClients: Client[] = [
-  { id: 'demo-amal', name: 'Amal (demo)', phone: '+21600000001', email: 'amal@example.com', location: 'Tunis, Tunisia', birth_date: '1996-06-21', birth_time: null, birth_place: null, sun_sign: 'Gemini', preferred_language: 'tn', status: 'vip', total_spent_tnd: 0, notes: 'Illustrative contact only. Replace this number before sending.', daily_opt_in: true, opted_in_at: iso, opted_out_at: null, opt_in_source: 'illustrative demo record', privacy_accepted_at: null, adult_confirmed_at: null, last_sent_on: null, last_sent_at: null, created_at: iso, updated_at: iso },
-  { id: 'demo-karim', name: 'Karim (demo)', phone: '+21600000002', email: null, location: 'Sousse, Tunisia', birth_date: null, birth_time: null, birth_place: null, sun_sign: 'Aries', preferred_language: 'fr', status: 'active', total_spent_tnd: 0, notes: 'Illustrative contact only. Replace this number before sending.', daily_opt_in: true, opted_in_at: iso, opted_out_at: null, opt_in_source: 'illustrative demo record', privacy_accepted_at: null, adult_confirmed_at: null, last_sent_on: null, last_sent_at: null, created_at: iso, updated_at: iso },
-  { id: 'demo-yasmine', name: 'Yasmine (demo)', phone: '+21600000003', email: null, location: 'La Marsa, Tunisia', birth_date: null, birth_time: null, birth_place: null, sun_sign: 'Pisces', preferred_language: 'en', status: 'lead', total_spent_tnd: 0, notes: 'Illustrative contact, not opted in.', daily_opt_in: false, opted_in_at: null, opted_out_at: null, opt_in_source: null, privacy_accepted_at: null, adult_confirmed_at: null, last_sent_on: null, last_sent_at: null, created_at: iso, updated_at: iso },
+  { id: 'demo-amal', name: 'Amal (demo)', phone: '+21600000001', email: 'amal@example.com', location: 'Tunis, Tunisia', birth_date: '1996-06-21', birth_time: null, birth_place: null, sun_sign: 'Gemini', preferred_language: 'tn', status: 'vip', total_spent_tnd: 0, notes: 'Illustrative contact only. Replace this number before sending.', daily_opt_in: true, auto_daily_opt_in: false, auto_opted_in_at: null, auto_opted_out_at: null, auto_opt_in_source: null, opted_in_at: iso, opted_out_at: null, opt_in_source: 'illustrative demo record', privacy_accepted_at: null, adult_confirmed_at: null, last_sent_on: null, last_sent_at: null, telegram_chat_id: null, telegram_username: null, telegram_opt_in: false, telegram_opted_in_at: null, telegram_opted_out_at: null, created_at: iso, updated_at: iso },
+  { id: 'demo-karim', name: 'Karim (demo)', phone: '+21600000002', email: null, location: 'Sousse, Tunisia', birth_date: null, birth_time: null, birth_place: null, sun_sign: 'Aries', preferred_language: 'fr', status: 'active', total_spent_tnd: 0, notes: 'Illustrative contact only. Replace this number before sending.', daily_opt_in: true, auto_daily_opt_in: false, auto_opted_in_at: null, auto_opted_out_at: null, auto_opt_in_source: null, opted_in_at: iso, opted_out_at: null, opt_in_source: 'illustrative demo record', privacy_accepted_at: null, adult_confirmed_at: null, last_sent_on: null, last_sent_at: null, telegram_chat_id: null, telegram_username: null, telegram_opt_in: false, telegram_opted_in_at: null, telegram_opted_out_at: null, created_at: iso, updated_at: iso },
+  { id: 'demo-yasmine', name: 'Yasmine (demo)', phone: '+21600000003', email: null, location: 'La Marsa, Tunisia', birth_date: null, birth_time: null, birth_place: null, sun_sign: 'Pisces', preferred_language: 'en', status: 'lead', total_spent_tnd: 0, notes: 'Illustrative contact, not opted in.', daily_opt_in: false, auto_daily_opt_in: false, auto_opted_in_at: null, auto_opted_out_at: null, auto_opt_in_source: null, opted_in_at: null, opted_out_at: null, opt_in_source: null, privacy_accepted_at: null, adult_confirmed_at: null, last_sent_on: null, last_sent_at: null, telegram_chat_id: null, telegram_username: null, telegram_opt_in: false, telegram_opted_in_at: null, telegram_opted_out_at: null, created_at: iso, updated_at: iso },
 ];
 
 export function getDemoClients(): Client[] {
@@ -49,15 +49,25 @@ export function upsertDemoClient(input: ClientInput, existing?: Client): Client 
   if (other) throw new Error('This WhatsApp number is already in your CRM.');
   const optingIn = input.daily_opt_in && !existing?.daily_opt_in;
   const optingOut = !input.daily_opt_in && Boolean(existing?.daily_opt_in);
+  const autoOptingIn = input.auto_daily_opt_in && !existing?.auto_daily_opt_in;
+  const autoOptingOut = !input.auto_daily_opt_in && Boolean(existing?.auto_daily_opt_in);
   const next: Client = {
     ...input,
     id: existing?.id || crypto.randomUUID(),
     opted_in_at: optingIn ? now : existing?.opted_in_at || null,
     opted_out_at: optingOut ? now : existing?.opted_out_at || null,
     opt_in_source: optingIn ? 'admin confirmed prior opt-in (demo)' : existing?.opt_in_source || null,
+    auto_opted_in_at: autoOptingIn ? now : existing?.auto_opted_in_at || null,
+    auto_opted_out_at: autoOptingOut ? now : existing?.auto_opted_out_at || null,
+    auto_opt_in_source: autoOptingIn ? 'separate automatic opt-in (demo)' : existing?.auto_opt_in_source || null,
     privacy_accepted_at: existing?.privacy_accepted_at || null, adult_confirmed_at: existing?.adult_confirmed_at || null,
     last_sent_on: existing?.last_sent_on || null,
     last_sent_at: existing?.last_sent_at || null,
+    telegram_chat_id: (existing as any)?.telegram_chat_id || null,
+    telegram_username: (existing as any)?.telegram_username || null,
+    telegram_opt_in: (existing as any)?.telegram_opt_in || false,
+    telegram_opted_in_at: (existing as any)?.telegram_opted_in_at || null,
+    telegram_opted_out_at: (existing as any)?.telegram_opted_out_at || null,
     created_at: existing?.created_at || now,
     updated_at: now,
   };
@@ -65,7 +75,7 @@ export function upsertDemoClient(input: ClientInput, existing?: Client): Client 
   return next;
 }
 
-export function addDemoLead(input: { name: string; phone: string; email: string | null; birthDate: string | null; birthTime: string | null; sunSign: Client['sun_sign']; preferredLanguage: Client['preferred_language']; location: string | null }): void {
+export function addDemoLead(input: { name: string; phone: string; email: string | null; birthDate: string | null; birthTime: string | null; sunSign: Client['sun_sign']; preferredLanguage: Client['preferred_language']; location: string | null; autoConsent: boolean }): void {
   const current = getDemoClients();
   const phone = normalizePhone(input.phone);
   if (current.some((c) => c.phone === phone)) return;
@@ -75,9 +85,12 @@ export function addDemoLead(input: { name: string; phone: string; email: string 
     birth_date: input.birthDate, birth_time: input.birthTime, birth_place: null,
     sun_sign: input.sunSign || (input.birthDate ? approximateSunSign(input.birthDate) : null),
     preferred_language: input.preferredLanguage, status: 'lead', total_spent_tnd: 0, notes: '',
-    daily_opt_in: true, opted_in_at: now, opted_out_at: null, opt_in_source: 'public form (same-device preview only)',
+    daily_opt_in: true, auto_daily_opt_in: input.autoConsent,
+    auto_opted_in_at: input.autoConsent ? now : null, auto_opted_out_at: null,
+    auto_opt_in_source: input.autoConsent ? 'separate auto checkbox (demo only)' : null,
+    opted_in_at: now, opted_out_at: null, opt_in_source: 'public form (same-device preview only)',
     privacy_accepted_at: now, adult_confirmed_at: now,
-    last_sent_on: null, last_sent_at: null, created_at: now, updated_at: now,
+    last_sent_on: null, last_sent_at: null, telegram_chat_id: null, telegram_username: null, telegram_opt_in: false, telegram_opted_in_at: null, telegram_opted_out_at: null, created_at: now, updated_at: now,
   };
   setDemoClients([newLead, ...current]);
 }
@@ -107,12 +120,14 @@ export function importDemo(raw: unknown[]): { imported: number; skipped: number 
       preferred_language: row.preferred_language || row.preferredLanguage || 'en',
       status: String(row.status || 'lead').toLowerCase(),
       total_spent_tnd: row.total_spent_tnd ?? row.totalSpentTND ?? 0,
-      notes: row.notes || '', daily_opt_in: false,
+      notes: row.notes || '', daily_opt_in: false, auto_daily_opt_in: false,
     });
     if (!parsed.success || seen.has(parsed.data.phone)) continue;
     seen.add(parsed.data.phone);
     const now = new Date().toISOString();
-    rows.push({ ...parsed.data, id: crypto.randomUUID(), opted_in_at: null, opted_out_at: null, opt_in_source: null, privacy_accepted_at: null, adult_confirmed_at: null, last_sent_on: null, last_sent_at: null, created_at: now, updated_at: now } as Client);
+    rows.push({ ...parsed.data, id: crypto.randomUUID(), opted_in_at: null, opted_out_at: null, opt_in_source: null,
+      auto_opted_in_at: null, auto_opted_out_at: null, auto_opt_in_source: null,
+      privacy_accepted_at: null, adult_confirmed_at: null, last_sent_on: null, last_sent_at: null, telegram_chat_id: null, telegram_username: null, telegram_opt_in: false, telegram_opted_in_at: null, telegram_opted_out_at: null, created_at: now, updated_at: now } as Client);
   }
   setDemoClients([...rows, ...current]);
   return { imported: rows.length, skipped: raw.length - rows.length };
