@@ -15,7 +15,7 @@ import { isoToDMY, normalizeBirthDate } from '@/lib/dates';
 type SignupProps = { configured: boolean; demo: boolean; turnstileSiteKey: string };
 
 const blank = { name: '', phone: '+216', email: '', birthDate: '', birthTime: '', sunSign: '', location: '', preferredLanguage: 'tn' as Language,
-  privacyConsent: false, dailyConsent: false, autoConsent: false, adultConsent: false, website: '' };
+  privacyConsent: false, dailyConsent: false, autoConsent: false, adultConsent: false, website: '' } // English only;
 
 export function Signup({ configured, demo, turnstileSiteKey }: SignupProps) {
   const [form, setForm] = useState(blank);
@@ -109,7 +109,7 @@ export function Signup({ configured, demo, turnstileSiteKey }: SignupProps) {
               <div className="form-field"><label htmlFor="offer-birth-time">Birth time <span>optional</span></label><input id="offer-birth-time" type="time" value={form.birthTime} onChange={(event) => setForm({ ...form, birthTime: event.target.value })} /><small>Local time, if known (24-hour HH:MM).</small></div></div>
             <div className="form-field"><label htmlFor="offer-sign">Sun sign <span>optional</span></label><select id="offer-sign" value={form.sunSign} onChange={(event) => setForm({ ...form, sunSign: event.target.value })}><option value="">Choose your sign</option>{SIGNS.map((sign) => <option key={sign} value={sign}>{SIGN_SYMBOLS[sign]} {sign}</option>)}</select></div>
             <div className="form-hint">Birth details are optional. Pick your sign if you know it; a date-only estimate can be off near a cusp. Daily notes are not a personal birth chart.</div>
-            <div className="field-row"><div className="form-field"><label htmlFor="offer-lang">Preferred language</label><select id="offer-lang" value={form.preferredLanguage} onChange={(event) => setForm({ ...form, preferredLanguage: event.target.value as Language })}><option value="tn">تونسي / Tunisian</option><option value="fr">Français</option><option value="en">English</option></select></div>
+            <div className="field-row"><div className="form-field"><label htmlFor="offer-lang">Preferred language</label><select id="offer-lang" value={form.preferredLanguage} onChange={(event) => setForm({ ...form, preferredLanguage: event.target.value as Language })}><option value="en">English</option></select></div>
               <div className="form-field"><label htmlFor="offer-location">Your city <span>optional</span></label><input id="offer-location" maxLength={100} value={form.location} placeholder="e.g. Tunis" onChange={(event) => setForm({ ...form, location: event.target.value })} /></div></div>
             <div className="form-field"><label htmlFor="offer-email">Email <span>optional</span></label><input id="offer-email" type="email" maxLength={254} value={form.email} placeholder="hello@example.com" onChange={(event) => setForm({ ...form, email: event.target.value })} /></div>
             <div className="hidden-trap" aria-hidden="true"><label htmlFor="offer-website">Website</label><input id="offer-website" tabIndex={-1} autoComplete="off" value={form.website} onChange={(event) => setForm({ ...form, website: event.target.value })} /></div>
