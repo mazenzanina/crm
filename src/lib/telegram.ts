@@ -69,7 +69,7 @@ export function welcomeKeyboard(): ReplyMarkup {
 }
 
 export function linkedKeyboard(): ReplyMarkup {
-  return { inline_keyboard: [[{ text: '🔮 Today', callback_data: 'today' }, { text: '📖 Book reading', url: 'https://tarot-tn.vercel.app/booking.html' }],[{ text: '↗️ Share', callback_data: 'share' }, { text: '⏸️ Pause', callback_data: 'stop' }]] };
+  return { inline_keyboard: [[{ text: '🔮 Today', callback_data: 'today' }, { text: '📖 Book reading', url: 'https://tarot-tn.vercel.app/booking.html' }],[{ text: '⏸️ Pause', callback_data: 'stop' }]] };
 }
 
 export function dailyKeyboard(bookingUrl: string, clientId?: string): ReplyMarkup {
@@ -84,14 +84,14 @@ export function dailyKeyboard(bookingUrl: string, clientId?: string): ReplyMarku
   const bot = (process.env.TELEGRAM_BOT_USERNAME || 'tarot_tn_bot').replace(/^@/,'');
   const shareUrl = `https://t.me/${bot}?start=ref_${cid || 'share'}`;
   return { inline_keyboard: [
-    [{ text: '📖 Book reading', url: book }, { text: '↗️ Share', callback_data: 'share' }],
+    [{ text: '📖 Book reading', url: book }],
     [{ text: '👍', callback_data: 'fb_up' }, { text: '👎', callback_data: 'fb_down' }, { text: '🎙️ Voice', callback_data: 'voice' }],
     [{ text: '🔮 Today', callback_data: 'today' }, { text: '📅 Missed', callback_data: 'missed' }, { text: '⏸️ Pause', callback_data: 'stop' }]
   ] };
 }
 
 export function helpText(): string {
-  return `*Help* — Tarot TN ✨\nSend *\\+216...* to link your daily note (09:00 Tunis)\n*/today* — replay today's note\n*/missed* — last 3 days\n*/share* — invite a friend\n*/stop* — pause  */resume* — resume\n*/stats* — admin only\nBook: https://tarot-tn.vercel.app/booking.html`;
+  return `*Help* — Tarot TN ✨\nSend *\\+216...* to link your daily note (09:00 Tunis)\n*/today* — replay today's note\n*/missed* — last 3 days\n*/stop* — pause  */resume* — resume\nBook: https://tarot-tn.vercel.app/booking.html`;
 }
 
 export function shareText(botUsername: string): string {
