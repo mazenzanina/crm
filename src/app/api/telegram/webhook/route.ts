@@ -27,33 +27,24 @@ export async function POST(req: NextRequest) {
     const chatId = String(cq.message?.chat?.id || cq.from?.id || '');
     const data = String(cq.data);
     const client = chatId ? await getClientByChat(chatId) : null;
-    const lang = client?.preferred_language || 'en';
+    const lang = 'en';
 
     if (data.startsWith('lang_')) {
-      const newLang = data.replace('lang_','') as 'en'|'fr'|'tn';
-      if (['en','fr','tn'].includes(newLang) && client) {
-        await db.from('clients').update({ preferred_language: newLang }).eq('id', client.id);
-        await answerCallbackQuery(cq.id, newLang==='fr'?'Français ✓': newLang==='tn'?'تم ✓':'English ✓');
-        await sendTelegramMessage(chatId, newLang==='fr'?'Langue mise à jour 🇫🇷': newLang==='tn'?'تم تحديث اللغة 🇹🇳':'Language updated 🇬🇧', linkedKeyboard(newLang));
-      } else if (!client) {
-        await answerCallbackQuery(cq.id, 'Link first: send +216...');
-        await sendTelegramMessage(chatId, 'Send your WhatsApp number as +216... to link, then you can change language.', welcomeKeyboard());
-      } else {
-        await answerCallbackQuery(cq.id);
-      }
+      await answerCallbackQuery(cq.id, 'English only');
+      await sendTelegramMessage(chatId, 'English only — daily notes are in English.', linkedKeyboard('en'));
       return NextResponse.json({ ok: true });
     }
 
     if (data === 'stop') {
       if (client) await db.from('clients').update({ telegram_opt_in: false, telegram_opted_out_at: new Date().toISOString() }).eq('id', client.id);
       await answerCallbackQuery(cq.id, 'Paused');
-      await sendTelegramMessage(chatId, lang==='fr'?'En pause. /resume pour reprendre.': lang==='tn'?'توقّف. ابعث /resume باش ترجع.':'Paused. Send /resume to restart.', { inline_keyboard: [[{ text: lang==='fr'?'▶️ Reprendre': lang==='tn'?'▶️ كمّل':'▶️ Resume', callback_data: 'resume' }]] });
+      await sendTelegramMessage(chatId, 'Paused. Send /resume to restart.', { inline_keyboard: [[{ text: '▶️ Resume', callback_data: 'resume' }]] });
       return NextResponse.json({ ok: true });
     }
     if (data === 'resume') {
       if (client) await db.from('clients').update({ telegram_opt_in: true, telegram_opted_in_at: new Date().toISOString(), telegram_opted_out_at: null }).eq('id', client.id);
       await answerCallbackQuery(cq.id, 'Resumed ✓');
-      await sendTelegramMessage(chatId, lang==='fr'?'Repris ✨ Vous recevrez la note à 09:00.': lang==='tn'?'رجعت ✨ توصلك النوتة 09:00.':'Resumed ✨ Daily note at 09:00.', linkedKeyboard(lang));
+      await sendTelegramMessage(chatId, 'Resumed ✨ Daily note at 09:00.', linkedKeyboard('en'));
       return NextResponse.json({ ok: true });
     }
     if (data === 'today') {
@@ -79,7 +70,7 @@ export async function POST(req: NextRequest) {
     }
     if (data === 'help' || data === 'hint_lang') {
       await answerCallbackQuery(cq.id);
-      await sendTelegramMessage(chatId, helpText(lang), linkedKeyboard(lang));
+      await sendTelegramMessage(chatId, helpText('en'), linkedKeyboard('en'));
       return NextResponse.json({ ok: true });
     }
     if (data === 'hint_link') {
@@ -101,24 +92,24 @@ export async function POST(req: NextRequest) {
   // /stop
   if (/^\/stop/i.test(text)) {
     await db.from('clients').update({ telegram_opt_in: false, telegram_opted_out_at: new Date().toISOString() }).eq('telegram_chat_id', chatId);
-    const client = await getClientByChat(chatId); const lang = client?.preferred_language || 'en';
-    await sendTelegramMessage(chatId, lang==='fr'?'En pause. /resume pour reprendre.': lang==='tn'?'توقّف. ابعث /resume باش ترجع.':'Paused. Send /resume to resume.', { inline_keyboard: [[{ text: lang==='fr'?'▶️ Reprendre': lang==='tn'?'▶️ كمّل':'▶️ Resume', callback_data: 'resume' }]] });
+    const client = await getClientByChat(chatId); const lang = 'en';
+    await sendTelegramMessage(chatId, 'Paused. Send /resume to resume.', { inline_keyboard: [[{ text: '▶️ Resume', callback_data: 'resume' }]] });
     return NextResponse.json({ ok: true });
   }
   if (/^\/resume/i.test(text)) {
     const { data: cl } = await db.from('clients').select('id,preferred_language').eq('telegram_chat_id', chatId).maybeSingle();
     if (cl) await db.from('clients').update({ telegram_opt_in: true, telegram_opted_in_at: new Date().toISOString(), telegram_opted_out_at: null }).eq('id', (cl as any).id);
-    const lang = (cl as any)?.preferred_language || 'en';
-    await sendTelegramMessage(chatId, lang==='fr'?'Repris ✨ 09:00 chaque jour.': lang==='tn'?'رجعت ✨ كل يوم 09:00.':'Resumed ✨ Daily at 09:00.', linkedKeyboard(lang));
+    const lang = 'en';
+    await sendTelegramMessage(chatId, 'Resumed ✨ Daily at 09:00.', linkedKeyboard('en'));
     return NextResponse.json({ ok: true });
   }
   if (/^\/help/i.test(text)) {
-    const client = await getClientByChat(chatId); const lang = client?.preferred_language || 'en';
-    await sendTelegramMessage(chatId, helpText(lang), linkedKeyboard(lang));
+    const client = await getClientByChat(chatId); const lang = 'en';
+    await sendTelegramMessage(chatId, helpText('en'), linkedKeyboard('en'));
     return NextResponse.json({ ok: true });
   }
   if (/^\/lang/i.test(text)) {
-    await sendTelegramMessage(chatId, 'Choose language / اختر اللغة / Choisir la langue:', { inline_keyboard: [[{ text: '🇹🇳 TN', callback_data: 'lang_tn' }, { text: '🇫🇷 FR', callback_data: 'lang_fr' }, { text: '🇬🇧 EN', callback_data: 'lang_en' }]] });
+    await sendTelegramMessage(chatId, 'English only. All daily notes are in English.', linkedKeyboard('en'));
     return NextResponse.json({ ok: true });
   }
   if (/^\/today/i.test(text)) {
@@ -138,9 +129,9 @@ export async function POST(req: NextRequest) {
   if (/^\/start/i.test(text)) {
     const client = await getClientByChat(chatId);
     if (client) {
-      await sendTelegramMessage(chatId, `Hi ${client.name.split(' ')[0]} ✨ Already linked! /today to replay, /lang to switch, /stop to pause.`, linkedKeyboard(client.preferred_language));
+      await sendTelegramMessage(chatId, `Hi ${client.name.split(' ')[0]} ✨ Already linked! /today to replay, /stop to pause.`, linkedKeyboard('en'));
     } else {
-      await sendTelegramMessage(chatId, 'Hi ✨ Welcome to Tarot TN — your daily sky note.\nSend your WhatsApp number as *+216...* to link.\nExample: `+21622481622`\n\n🇫🇷 Envoyez votre numéro WhatsApp en +216...\n🇹🇳 ابعث نومروك واتساب +216...', welcomeKeyboard());
+      await sendTelegramMessage(chatId, 'Hi ✨ Welcome to Tarot TN — your daily sky note.\nSend your WhatsApp number as *+216...* to link.\nExample: `+21622481622`', welcomeKeyboard());
     }
     return NextResponse.json({ ok: true });
   }
@@ -151,13 +142,13 @@ export async function POST(req: NextRequest) {
     const { data: client } = await db.from('clients').select('id,name,preferred_language,sun_sign,birth_date').eq('phone', phone).maybeSingle();
     if (client) {
       await db.from('clients').update({ telegram_chat_id: chatId, telegram_username: username, telegram_opt_in: true, telegram_opted_in_at: new Date().toISOString(), telegram_opted_out_at: null }).eq('id', (client as any).id);
-      const lang = (client as any).preferred_language || 'en';
+      const lang = 'en';
       const first = (client as any).name.split(' ')[0];
       let onboarding = '';
       if (!(client as any).birth_date && !(client as any).sun_sign) {
-        onboarding = lang==='fr'?'\n\nTu veux une note plus perso ? Envoie ton signe (ex: Gémeaux) ou ta date de naissance. Optionnel.': lang==='tn'?'\n\nتحب نوتة شخصية أكثر؟ ابعث برجك ولا تاريخ ميلادك. اختياري.':'\n\nWant it more personal? Send your sign or birth date. Optional.';
+        onboarding = '\n\nWant it more personal? Send your sign or birth date. Optional.';
       }
-      await sendTelegramMessage(chatId, (lang==='fr'?`Lié ✨ Bienvenue ${first} ! Note quotidienne à 09:00 Tunis.`: lang==='tn'?`تم الربط ✨ مرحبا ${first} ! نوتة يومية 09:00 تونس.`:`Linked ✨ Welcome ${first}! Daily note at 09:00 Tunis.`)+onboarding, linkedKeyboard(lang));
+      await sendTelegramMessage(chatId, `Linked ✨ Welcome ${first}! Daily note at 09:00 Tunis.`+onboarding, linkedKeyboard('en'));
       // also send today immediately
       const sky = computeSky();
       const { data: settings } = await db.from('app_settings').select('booking_url').eq('id',1).maybeSingle();
@@ -167,7 +158,7 @@ export async function POST(req: NextRequest) {
       const { dailyKeyboard } = await import('@/lib/telegram');
       await sendTelegramMessage(chatId, t, dailyKeyboard(lang, bookingUrl));
     } else {
-      await sendTelegramMessage(chatId, 'Number not found in CRM. Check +216 format or ask Mazen to add you.\n🇫🇷 Numéro introuvable. Vérifiez le +216.\n🇹🇳 النومرو موش موجود. ثبّت +216...', welcomeKeyboard());
+      await sendTelegramMessage(chatId, 'Number not found in CRM. Check +216 format or ask Mazen to add you.', welcomeKeyboard());
     }
     return NextResponse.json({ ok: true });
   }
@@ -183,12 +174,12 @@ export async function POST(req: NextRequest) {
     if (found) {
       const eng = signMap[found];
       await db.from('clients').update({ sun_sign: eng }).eq('id', linked.id);
-      await sendTelegramMessage(chatId, `Saved ✨ ${eng} — tomorrow's note will be more personal. /today to see today again.`, linkedKeyboard(linked.preferred_language));
+      await sendTelegramMessage(chatId, `Saved ✨ ${eng} — tomorrow's note will be more personal. /today to see today again.`, linkedKeyboard('en'));
       return NextResponse.json({ ok: true });
     }
   }
 
-  await sendTelegramMessage(chatId, 'Send /start to link, /today to replay, /lang to switch, /stop to pause. Or send +216...', linked?.preferred_language ? linkedKeyboard(linked.preferred_language) : welcomeKeyboard());
+  await sendTelegramMessage(chatId, 'Send /start to link, /today to replay, /stop to pause. Or send +216...', linked ? linkedKeyboard('en') : welcomeKeyboard());
   return NextResponse.json({ ok: true });
 }
 
