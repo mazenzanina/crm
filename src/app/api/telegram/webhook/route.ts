@@ -26,10 +26,11 @@ async function sendDailyFor(client: any, chatId: string) {
   const parts = makeDailyMessage({ id: client.id, name: client.name, sun_sign: client.sun_sign, preferred_language: 'en' }, sky, bookingUrl);
   const text = joinMessage(parts);
   const kb = dailyKeyboard(bookingUrl, client.id);
+  // card images disabled per user request - text only
   const file = cardFileFor(client.id, sky.dateKey);
   const base = process.env.CARD_IMAGE_BASE || 'https://crm-flame-rho-25.vercel.app/img/tarot';
   const photoUrl = `${base}/${file}.jpg`;
-  try { await sendTelegramPhoto(chatId, photoUrl, text, kb); } catch (e:any) { 
+  try { if (false) await sendTelegramPhoto(chatId, photoUrl, text, kb); else throw new Error('images disabled'); } catch (e:any) { 
     if (e?.blocked || isBlockedError(String(e?.message||''))) { await db.from('clients').update({ telegram_opt_in: false, telegram_opted_out_at: new Date().toISOString() }).eq('id', client.id).then(()=>{},()=>{}); }
     await sendTelegramMessage(chatId, text, kb).catch(()=>{}); 
   }
@@ -188,10 +189,7 @@ export async function POST(req: NextRequest) {
       const parts = makeDailyMessage({ id: client.id, name: client.name, sun_sign: client.sun_sign, preferred_language: 'en' }, fakeSky, bookingUrl);
       const txt = joinMessage(parts) + (d>0 ? `\n\n_${dk}_` : '');
       const kb = d===0 ? dailyKeyboard(bookingUrl, client.id) : undefined;
-      const file = cardFileFor(client.id, dk);
-      const base = process.env.CARD_IMAGE_BASE || 'https://crm-flame-rho-25.vercel.app/img/tarot';
-      const photoUrl = `${base}/${file}.jpg`;
-      try { if (d===0) await sendTelegramPhoto(chatId, photoUrl, txt, kb); else await sendTelegramMessage(chatId, txt); } catch { await sendTelegramMessage(chatId, txt, kb).catch(()=>{}); }
+      try { await sendTelegramMessage(chatId, txt, kb); } catch { await sendTelegramMessage(chatId, txt, kb).catch(()=>{}); }
       await new Promise(r=>setTimeout(r,250));
     }
     return NextResponse.json({ ok: true });
