@@ -40,20 +40,18 @@ export async function answerCallbackQuery(callbackQueryId: string, text?: string
 
 // Keyboards
 export function welcomeKeyboard(): ReplyMarkup {
-  return { inline_keyboard: [[{ text: '✨ Link my daily note', callback_data: 'hint_link' }],[{ text: 'Français', callback_data: 'hint_lang' }, { text: 'عربي', callback_data: 'hint_lang' }],[{ text: 'Help / المساعدة', callback_data: 'help' }]] };
+  return { inline_keyboard: [[{ text: '✨ Link my daily note', callback_data: 'hint_link' }],[{ text: 'Help', callback_data: 'help' }]] };
 }
 
-export function linkedKeyboard(lang: string): ReplyMarkup {
-  return { inline_keyboard: [[{ text: lang==='fr'?'🔮 Ma carte du jour': lang==='tn'?'🔮 ورقتي اليوم':'🔮 Today', callback_data: 'today' }, { text: '📖 Book / Réserver', url: 'https://tarot-tn.vercel.app/booking.html' }],[{ text: '🇹🇳 TN', callback_data: 'lang_tn' }, { text: '🇫🇷 FR', callback_data: 'lang_fr' }, { text: '🇬🇧 EN', callback_data: 'lang_en' }],[{ text: lang==='fr'?'⏸️ Pause': lang==='tn'?'⏸️ وقّف':'⏸️ Pause', callback_data: 'stop' }]] };
+export function linkedKeyboard(_lang: string = 'en'): ReplyMarkup {
+  return { inline_keyboard: [[{ text: '🔮 Today', callback_data: 'today' }, { text: '📖 Book reading', url: 'https://tarot-tn.vercel.app/booking.html' }],[{ text: '⏸️ Pause', callback_data: 'stop' }]] };
 }
 
-export function dailyKeyboard(lang: string, bookingUrl: string): ReplyMarkup {
+export function dailyKeyboard(_lang: string, bookingUrl: string): ReplyMarkup {
   const book = bookingUrl || 'https://tarot-tn.vercel.app/booking.html';
-  return { inline_keyboard: [[{ text: lang==='fr'?'📖 Réserver': lang==='tn'?'📖 احجز':'📖 Book reading', url: book }],[{ text: '🇹🇳', callback_data: 'lang_tn' }, { text: '🇫🇷', callback_data: 'lang_fr' }, { text: '🇬🇧', callback_data: 'lang_en' }, { text: lang==='fr'?'⏸️ Pause': lang==='tn'?'⏸️ وقّف':'⏸️ Pause', callback_data: 'stop' }]] };
+  return { inline_keyboard: [[{ text: '📖 Book reading', url: book }],[{ text: '⏸️ Pause', callback_data: 'stop' }]] };
 }
 
-export function helpText(lang: string): string {
-  if (lang==='fr') return `*Aide* — Tarot TN ✨\n/send *\\+216...* pour lier votre note quotidienne (09h00 Tunis)\n*/today* — revoir la note du jour\n*/lang* — choisir 🇹🇳/🇫🇷/🇬🇧\n*/stop* — pause  */resume* — reprendre\nRéservation: https://tarot-tn.vercel.app/booking.html`;
-  if (lang==='tn') return `*المساعدة* — Tarot TN ✨\nابعث *\\+216...* باش تربط النوتة اليومية (09:00 تونس)\n*/today* — شوف نوتة اليوم\n*/lang* — اختار 🇹🇳/🇫🇷/🇬🇧\n*/stop* — وقّف  */resume* — كمّل`;
-  return `*Help* — Tarot TN ✨\nSend *\\+216...* to link your daily note (09:00 Tunis)\n*/today* — replay today's note\n*/lang* — pick 🇹🇳/🇫🇷/🇬🇧\n*/stop* — pause  */resume* — resume\nBook: https://tarot-tn.vercel.app/booking.html`;
+export function helpText(_lang: string = 'en'): string {
+  return `*Help* — Tarot TN ✨\nSend *\\+216...* to link your daily note (09:00 Tunis)\n*/today* — replay today's note\n*/stop* — pause  */resume* — resume\nBook: https://tarot-tn.vercel.app/booking.html`;
 }
