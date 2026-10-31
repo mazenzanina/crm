@@ -257,10 +257,11 @@ export async function POST(req: NextRequest) {
       let onboarding = '';
       if (!(client as any).birth_date && !(client as any).sun_sign) onboarding = '\n\nWant it more personal? Send your sign or birth date. Optional.';
       await sendTelegramMessage(chatId, `Linked ✨ Welcome ${first}! Daily note at 09:00 Tunis.`+onboarding, linkedKeyboard());
-      const fullClient = await getClientByChat(chatId);
-      if (fullClient) await sendDailyFor(fullClient, chatId);
+      // Use the client we just linked directly, don't re-query to avoid replication lag
+      const linkedClient = { id: (client as any).id, name: (client as any).name, sun_sign: (client as any).sun_sign, preferred_language: 'en' as const, telegram_opt_in: true };
+      await sendDailyFor(linkedClient as any, chatId).catch(()=>{});
     } else {
-      await sendTelegramMessage(chatId, 'Number not found in CRM. Check +216 format or ask Mazen to add you.', welcomeKeyboard());
+      await sendTelegramMessage(chatId, 'Number not found in CRM. Check +216 format or ask Mazen to add you.\nFound: `' + phone + '` — if this is correct, add it in CRM → Clients.', welcomeKeyboard());
     }
     return NextResponse.json({ ok: true });
   }
