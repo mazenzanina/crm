@@ -36,6 +36,7 @@ export const signupSchema = z.object({
   location: optionalText(100),
   privacyConsent: z.literal(true),
   dailyConsent: z.literal(true),
+  autoConsent: z.boolean().optional().default(false), // separate permission for automated Business API delivery
   adultConsent: z.literal(true),
   website: z.string().optional().default(''), // invisible honeypot
   turnstileToken: z.string().max(2000).optional(),
@@ -58,9 +59,18 @@ export const clientSchema = z.object({
   total_spent_tnd: z.coerce.number().finite().min(0).max(10_000_000),
   notes: z.string().trim().max(2000),
   daily_opt_in: z.boolean(),
+  auto_daily_opt_in: z.boolean().default(false),
+}).refine((data) => !data.auto_daily_opt_in || data.daily_opt_in, {
+  message: 'Automatic delivery requires daily WhatsApp opt-in.', path: ['auto_daily_opt_in'],
 });
 
 export type ClientInput = z.infer<typeof clientSchema>;
+
+export const automationSettingsSchema = z.object({
+  enabled: z.boolean(),
+  templateConfirmed: z.boolean(),
+  sendTimeTunis: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Use a Tunis time like 09:30.'),
+});
 
 export const settingsSchema = z.object({
   booking_url: z.string().trim().url().max(400).refine((value) => {
