@@ -84,9 +84,9 @@ export function dailyKeyboard(bookingUrl: string, clientId?: string): ReplyMarku
   const bot = (process.env.TELEGRAM_BOT_USERNAME || 'tarot_tn_bot').replace(/^@/,'');
   const shareUrl = `https://t.me/${bot}?start=ref_${cid || 'share'}`;
   return { inline_keyboard: [
-    [{ text: '📖 Book reading', url: book }, { text: '↗️ Share', url: shareUrl }],
+    [{ text: '📖 Book reading', url: book }, { text: '↗️ Share', callback_data: 'share' }],
     [{ text: '👍', callback_data: 'fb_up' }, { text: '👎', callback_data: 'fb_down' }, { text: '🎙️ Voice', callback_data: 'voice' }],
-    [{ text: '📅 Missed', callback_data: 'missed' }, { text: '⏸️ Pause', callback_data: 'stop' }]
+    [{ text: '🔮 Today', callback_data: 'today' }, { text: '📅 Missed', callback_data: 'missed' }, { text: '⏸️ Pause', callback_data: 'stop' }]
   ] };
 }
 
