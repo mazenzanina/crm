@@ -8,7 +8,27 @@ function stableHash(s:string){let v=2166136261;for(let i=0;i<s.length;i++){v^=s.
 function cardFileFor(a:string,b:string){return CARD_FILES[stableHash(b+'|'+a)%CARD_FILES.length];}
 function daysAgo(n:number){const d=new Date();d.setDate(d.getDate()-n);return d.toISOString().slice(0,10);}
 export const runtime='nodejs';export const dynamic='force-dynamic';
-async function getClient(chatId:string){try{const db=serviceDb();const {data}=await db.from('clients').select('id,name,preferred_language,telegram_opt_in,sun_sign,birth_date').eq('telegram_chat_id',chatId).maybeSingle();return data as any;}catch{return null;}}
+async function getClient(chatId:string){
+  try{
+    const db=serviceDb();
+    const {data, error} = await db.from('clients').select('id,name,preferred_language,telegram_opt_in,sun_sign,birth_date').eq('telegram_chat_id',chatId).maybeSingle();
+    if(error){
+      // column missing -> return null but log
+      console.error('getClient error', error.message);
+      return null;
+    }
+    if(data) return data as any;
+    // fallback: try with numeric chatId if string failed (in case column is integer)
+    try{
+      const num = Number(chatId);
+      if(!isNaN(num)){
+        const {data: data2} = await db.from('clients').select('id,name,preferred_language,telegram_opt_in,sun_sign,birth_date').eq('telegram_chat_id', num as any).maybeSingle();
+        if(data2) return data2 as any;
+      }
+    }catch{}
+    return null;
+  }catch(e){ console.error('getClient exception', e); return null; }
+}
 async function sendDaily(client:any,chatId:string){try{const sky=computeSky();const db=serviceDb();const {data:settings}=await db.from('app_settings').select('booking_url').eq('id',1).maybeSingle();const bookingUrl=(settings as any)?.booking_url||'https://tarot-tn.vercel.app/booking.html';const parts=makeDailyMessage({id:client.id,name:client.name,sun_sign:client.sun_sign,preferred_language:'en'},sky,bookingUrl);const text=joinMessage(parts);const kb=dailyKeyboard(bookingUrl,client.id);await sendTelegramMessage(chatId,text,kb);}catch(e){try{const sky2=computeSky();const parts2=makeDailyMessage({id:client.id,name:client.name,sun_sign:client.sun_sign,preferred_language:'en'},sky2,'https://tarot-tn.vercel.app/booking.html');await sendTelegramMessage(chatId,joinMessage(parts2),dailyKeyboard('https://tarot-tn.vercel.app/booking.html',client.id));}catch{}}}
 export async function POST(req:NextRequest){
   const cfg=telegramConfig();const update=await req.json().catch(()=>null) as any;const db=serviceDb();
@@ -39,7 +59,7 @@ export async function POST(req:NextRequest){
         return NextResponse.json({ok:true});
       }
       if(data==='missed'){
-        if(!client){await sendTelegramMessage(chatId,'Not linked yet. Send /start then +216...',welcomeKeyboard());return NextResponse.json({ok:true});}
+        if(!client){await sendTelegramMessage(chatId,'Not linked yet. Send /start then +216...\nIf already linked, run the SQL fix for telegram columns.',welcomeKeyboard());return NextResponse.json({ok:true});}
         for(let d=2;d>=0;d--){
           const dk=daysAgo(d);const sky=computeSky();const fake={...sky,dateKey:dk} as any;
           const {data:settings}=await db.from('app_settings').select('booking_url').eq('id',1).maybeSingle();const bookingUrl=(settings as any)?.booking_url||'https://tarot-tn.vercel.app/booking.html';
@@ -58,11 +78,15 @@ export async function POST(req:NextRequest){
       if(data==='resume'){
         if(client) try{await db.from('clients').update({telegram_opt_in:true,telegram_opted_in_at:new Date().toISOString(),telegram_opted_out_at:null}).eq('id',client.id);}catch{}
         if(client) await sendTelegramMessage(chatId,'Resumed ✨ Daily at 09:00.',linkedKeyboard());
-        else await sendTelegramMessage(chatId,'Not linked yet. Send /start then +216...',welcomeKeyboard());
+        else await sendTelegramMessage(chatId,'Not linked yet. Send /start then +216...\nIf already linked, run the SQL fix for telegram columns.',welcomeKeyboard());
         return NextResponse.json({ok:true});
       }
       if(data==='today'){
-        if(!client){await sendTelegramMessage(chatId,'Not linked yet. Send /start then +216...',welcomeKeyboard());return NextResponse.json({ok:true});}
+        if(!client){
+        // Debug: check if column exists
+        await sendTelegramMessage(chatId,'Not linked yet. Send /start then +216...\nIf you already linked, your database may be missing telegram columns — run the SQL fix I sent.',welcomeKeyboard());
+        return NextResponse.json({ok:true});
+      }
         if(!client.telegram_opt_in){await sendTelegramMessage(chatId,'Paused. Send /resume.',{inline_keyboard:[[{text:'▶️ Resume',callback_data:'resume'}]]});return NextResponse.json({ok:true});}
         await sendDaily(client,chatId);
         return NextResponse.json({ok:true});
@@ -99,8 +123,8 @@ export async function POST(req:NextRequest){
     if(/^\/help/i.test(text)){await sendTelegramMessage(chatId,helpText(),linkedKeyboard());return NextResponse.json({ok:true});}
     if(/^\/share/i.test(text)){let c=null;try{c=await getClient(chatId);}catch{}const bot=(process.env.TELEGRAM_BOT_USERNAME||'tarot_tn_bot').replace(/^@/,'');await sendTelegramMessage(chatId,'Share ✨\nhttps://t.me/'+bot+'?start=ref_'+(c?.id||'share'),linkedKeyboard());return NextResponse.json({ok:true});}
     if(/^\/voice/i.test(text)){const url=process.env.TELEGRAM_VOICE_URL||'https://crm-flame-rho-25.vercel.app/audio/intro.ogg';try{await sendTelegramVoice(chatId,url,'Hello from Mazen ✨');}catch{await sendTelegramMessage(chatId,'Voice coming soon ✨',linkedKeyboard());}return NextResponse.json({ok:true});}
-    if(/^\/missed/i.test(text)){let c=null;try{c=await getClient(chatId);}catch{}if(!c){await sendTelegramMessage(chatId,'Not linked yet. Send /start then +216...',welcomeKeyboard());return NextResponse.json({ok:true});}for(let d=2;d>=0;d--){const dk=daysAgo(d);const sky=computeSky();const fake={...sky,dateKey:dk} as any;const {data:settings}=await db.from('app_settings').select('booking_url').eq('id',1).maybeSingle();const bookingUrl=(settings as any)?.booking_url||'https://tarot-tn.vercel.app/booking.html';const parts=makeDailyMessage({id:c.id,name:c.name,sun_sign:c.sun_sign,preferred_language:'en'},fake,bookingUrl);const txt=joinMessage(parts)+(d>0?'\\n\\n_'+dk+'_':'');const kb=d===0?dailyKeyboard(bookingUrl,c.id):undefined;try{await sendTelegramMessage(chatId,txt,kb);}catch{}await new Promise(r=>setTimeout(r,200));}return NextResponse.json({ok:true});}
-    if(/^\/today/i.test(text)){let c=null;try{c=await getClient(chatId);}catch{}if(!c){await sendTelegramMessage(chatId,'Not linked yet. Send /start then +216...',welcomeKeyboard());return NextResponse.json({ok:true});}if(!c.telegram_opt_in){await sendTelegramMessage(chatId,'Paused. Send /resume.',{inline_keyboard:[[{text:'▶️ Resume',callback_data:'resume'}]]});return NextResponse.json({ok:true});}await sendDaily(c,chatId);return NextResponse.json({ok:true});}
+    if(/^\/missed/i.test(text)){let c=null;try{c=await getClient(chatId);}catch{}if(!c){await sendTelegramMessage(chatId,'Not linked yet. Send /start then +216...\nIf already linked, run the SQL fix for telegram columns.',welcomeKeyboard());return NextResponse.json({ok:true});}for(let d=2;d>=0;d--){const dk=daysAgo(d);const sky=computeSky();const fake={...sky,dateKey:dk} as any;const {data:settings}=await db.from('app_settings').select('booking_url').eq('id',1).maybeSingle();const bookingUrl=(settings as any)?.booking_url||'https://tarot-tn.vercel.app/booking.html';const parts=makeDailyMessage({id:c.id,name:c.name,sun_sign:c.sun_sign,preferred_language:'en'},fake,bookingUrl);const txt=joinMessage(parts)+(d>0?'\\n\\n_'+dk+'_':'');const kb=d===0?dailyKeyboard(bookingUrl,c.id):undefined;try{await sendTelegramMessage(chatId,txt,kb);}catch{}await new Promise(r=>setTimeout(r,200));}return NextResponse.json({ok:true});}
+    if(/^\/today/i.test(text)){let c=null;try{c=await getClient(chatId);}catch{}if(!c){await sendTelegramMessage(chatId,'Not linked yet. Send /start then +216...\nIf already linked, run the SQL fix for telegram columns.',welcomeKeyboard());return NextResponse.json({ok:true});}if(!c.telegram_opt_in){await sendTelegramMessage(chatId,'Paused. Send /resume.',{inline_keyboard:[[{text:'▶️ Resume',callback_data:'resume'}]]});return NextResponse.json({ok:true});}await sendDaily(c,chatId);return NextResponse.json({ok:true});}
     if(/^\/start/i.test(text)){
       const ref=(text.split(/\s+/)[1]||'');if(ref.startsWith('ref_')) try{await db.from('telegram_refs').insert({chat_id:chatId,ref:ref.slice(4),created_at:new Date().toISOString()});}catch{}
       let c=null;try{c=await getClient(chatId);}catch{}
